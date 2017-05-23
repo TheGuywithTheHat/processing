@@ -32,6 +32,9 @@ import java.lang.ref.WeakReference;
 import java.net.URL;
 import java.nio.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 
 
 /**
@@ -53,8 +56,21 @@ public class PGraphicsOpenGL extends PGraphics {
   // Using the technique alternative to finalization described in:
   // http://www.oracle.com/technetwork/articles/java/finalization-137655.html
   private static ReferenceQueue<Object> refQueue = new ReferenceQueue<>();
-  private static List<Disposable<? extends Object>> reachableWeakReferences =
-    new LinkedList<>();
+  private static Set<Disposable<? extends Object>> reachableWeakReferences =
+    new ConcurrentSkipListSet<>((d1, d2) -> (d1.hashCode() - d2.hashCode()));
+  private static BlockingQueue<Disposable<? extends Object>> toRemove = new LinkedBlockingQueue<>();
+
+  static {
+    new Thread(() -> {
+      while(true) {
+        try {
+          reachableWeakReferences.remove(toRemove.take());
+        } catch(InterruptedException ie) {
+          continue;
+        }
+      }
+    }).setName("disposable-removal-thread");
+  }
 
   static final private int MAX_DRAIN_GLRES_ITERATIONS = 10;
 
@@ -79,7 +95,7 @@ public class PGraphicsOpenGL extends PGraphics {
     }
 
     public void dispose() {
-      reachableWeakReferences.remove(this);
+      toRemove.add(this);
       disposeNative();
     }
 
