@@ -330,6 +330,7 @@ public class Table {
     String extension = null;
     boolean binary = false;
     String encoding = "UTF-8";
+    char delimiter = ',';
 
     String worksheet = null;
     final String sheetParam = "worksheet=";
@@ -340,8 +341,10 @@ public class Table {
       for (String opt : opts) {
         if (opt.equals("tsv")) {
           extension = "tsv";
+          delimiter = '\t';
         } else if (opt.equals("csv")) {
           extension = "csv";
+          delimiter = ',';
         } else if (opt.equals("ods")) {
           extension = "ods";
         } else if (opt.equals("newlines")) {
@@ -359,6 +362,8 @@ public class Table {
           // ignore option, this is only handled by PApplet
         } else if (opt.startsWith("encoding=")) {
           encoding = opt.substring(9);
+        } else if (opt.startsWith("delimiter=")) {
+          delimiter = opt.charAt(10);
         } else {
           throw new IllegalArgumentException("'" + opt + "' is not a valid option for loading a Table");
         }
@@ -396,13 +401,13 @@ public class Table {
         parseBasic(reader, header, false);
       }
       */
-      parseBasic(reader, header, "tsv".equals(extension));
+      parseBasic(reader, header, delimiter);
     }
   }
 
 
   protected void parseBasic(BufferedReader reader,
-                            boolean header, boolean tsv) throws IOException {
+                            boolean header, char delimiter) throws IOException {
     String line = null;
     int row = 0;
     if (rowCount == 0) {
@@ -415,10 +420,10 @@ public class Table {
           setRowCount(row << 1);
         }
         if (row == 0 && header) {
-          setColumnTitles(tsv ? PApplet.split(line, '\t') : splitLineCSV(line, reader));
+          setColumnTitles(delimiter != ',' ? PApplet.split(line, delimiter) : splitLineCSV(line, reader));
           header = false;
         } else {
-          setRow(row, tsv ? PApplet.split(line, '\t') : splitLineCSV(line, reader));
+          setRow(row, delimiter != ',' ? PApplet.split(line, delimiter) : splitLineCSV(line, reader));
           row++;
         }
 
