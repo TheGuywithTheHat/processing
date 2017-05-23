@@ -364,6 +364,7 @@ public class Table {
           encoding = opt.substring(9);
         } else if (opt.startsWith("delimiter=")) {
           delimiter = opt.charAt(10);
+          extension = "none";
         } else {
           throw new IllegalArgumentException("'" + opt + "' is not a valid option for loading a Table");
         }
@@ -371,7 +372,7 @@ public class Table {
     }
 
     if (extension == null) {
-      throw new IllegalArgumentException("No extension specified for this Table");
+      throw new IllegalArgumentException("No extension or delimiter specified for this Table");
     }
 
     if (binary) {

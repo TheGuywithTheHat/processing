@@ -6121,6 +6121,11 @@ public class PApplet implements PConstants {
    * dictionary file can only be tab separated values (.tsv) and its extension
    * will be ignored. This option was added in Processing 2.0.2.
    *
+   * Another option is "delimiter=c", where c is a character other than
+   * whitespace or a comma. In this case, it will be treated like a csv, but
+   * with the custom delimiter character rather than a comma. However, this
+   * does not support escaping with quotes or backslashes.
+   *
    * @param options may contain "header", "tsv", "csv", or "bin" separated by commas
    */
   public Table loadTable(String filename, String options) {
