@@ -421,10 +421,10 @@ public class Table {
           setRowCount(row << 1);
         }
         if (row == 0 && header) {
-          setColumnTitles(delimiter != ',' ? PApplet.split(line, delimiter) : splitLineCSV(line, reader));
+          setColumnTitles(delimiter == '\t' ? PApplet.split(line, '\t') : splitLineDSV(line, reader, delimiter));
           header = false;
         } else {
-          setRow(row, delimiter != ',' ? PApplet.split(line, delimiter) : splitLineCSV(line, reader));
+          setRow(row, delimiter == '\t' ? PApplet.split(line, '\t') : splitLineDSV(line, reader, delimiter));
           row++;
         }
 
@@ -562,26 +562,31 @@ public class Table {
   }
   */
 
-
-  static class CommaSeparatedLine {
+  static protected class DelimiterSeparatedLine {
     char[] c;
     String[] pieces;
     int pieceCount;
+    char delimiter;
 
 //    int offset;
     int start; //, stop;
 
     String[] handle(String line, BufferedReader reader) throws IOException {
+      return handle(line, reader);
+    }
+
+    String[] handle(String line, BufferedReader reader, char del) throws IOException {
+      delimiter = del;
 //      PApplet.println("handle() called for: " + line);
       start = 0;
       pieceCount = 0;
       c = line.toCharArray();
 
       // get tally of number of columns and allocate the array
-      int cols = 1;  // the first comma indicates the second column
+      int cols = 1;  // the first delimiter indicates the second column
       boolean quote = false;
       for (int i = 0; i < c.length; i++) {
-        if (!quote && (c[i] == ',')) {
+        if (!quote && (c[i] == delimiter)) {
           cols++;
         } else if (c[i] == '\"') {
           // double double quotes (escaped quotes like "") will simply toggle
@@ -621,7 +626,7 @@ public class Table {
       }
 
       // Make any remaining entries blanks instead of nulls. Empty columns from
-      // CSV are always "" not null, so this handles successive commas in a line
+      // CSV are always "" not null, so this handles successive delimiters in a line
       for (int i = pieceCount; i < pieces.length; i++) {
         pieces[i] = "";
       }
@@ -649,10 +654,10 @@ public class Table {
     }
 
     /**
-     * Returns the next comma (not inside a quote) in the specified array.
+     * Returns the next delimiter (not inside a quote) in the specified array.
      * @param c array to search
      * @param index offset at which to start looking
-     * @return index of the comma, or -1 if line ended inside an unclosed quote
+     * @return index of the delimiter, or -1 if line ended inside an unclosed quote
      */
     protected boolean ingest() {
       boolean hasEscapedQuotes = false;
@@ -681,7 +686,7 @@ public class Table {
               hasEscapedQuotes = true;
               i += 2;
 
-            } else if (c[i+1] == ',') {
+            } else if (c[i+1] == delimiter) {
               // that was our closing quote, get outta here
               addPiece(start, i, hasEscapedQuotes);
               start = i+2;
@@ -708,7 +713,7 @@ public class Table {
               throw new RuntimeException("Unterminated quoted field mid-line");
             }
           }
-        } else if (!quoted && c[i] == ',') {
+        } else if (!quoted && c[i] == delimiter) {
           addPiece(start, i, hasEscapedQuotes);
           start = i+1;
           return true;
@@ -745,20 +750,29 @@ public class Table {
   }
 
 
-  CommaSeparatedLine csl;
+  protected DelimiterSeparatedLine dsl;
 
   /**
-   * Parse a line of text as comma-separated values, returning each value as
+   * Parse a line of text as delimiter-separated values, returning each value as
    * one entry in an array of String objects. Remove quotes from entries that
    * begin and end with them, and convert 'escaped' quotes to actual quotes.
    * @param line line of text to be parsed
-   * @return an array of the individual values formerly separated by commas
+   * @param delimiter delimiter to split line by
+   * @return an array of the individual values formerly separated by delimiters
+   */
+  protected String[] splitLineDSV(String line, BufferedReader reader, char delimiter) throws IOException {
+    if (dsl == null) {
+      dsl = new DelimiterSeparatedLine();
+    }
+    return dsl.handle(line, reader, delimiter);
+  }
+
+  /**
+   * Kept for backwards compatibility.
+   * @deprecated
    */
   protected String[] splitLineCSV(String line, BufferedReader reader) throws IOException {
-    if (csl == null) {
-      csl = new CommaSeparatedLine();
-    }
-    return csl.handle(line, reader);
+    return splitLineDSV(line, reader, ',');
   }
 
 
