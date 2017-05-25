@@ -120,12 +120,18 @@ public class Table {
    *
    * @nowebref
    */
-  public Table(File file, String options) throws IOException {
+  public Table(File file, String options, char delimiter) throws IOException {
     // uses createInput() to handle .gz (and eventually .bz2) files
     init();
     parse(PApplet.createInput(file),
-          extensionOptions(true, file.getName(), options));
+          extensionOptions(true, file.getName(), options), delimiter);
   }
+
+
+  public Table(File file, String options) throws IOException {
+    this(file, options, '\0');
+  }
+
 
   /**
    * @nowebref
@@ -147,11 +153,17 @@ public class Table {
    * @nowebref
    * @param input
    * @param options
+   * @param delimiter
    * @throws IOException
    */
-  public Table(InputStream input, String options) throws IOException {
+  public Table(InputStream input, String options, char delimiter) throws IOException {
     init();
-    parse(input, options);
+    parse(input, options, delimiter);
+  }
+
+
+  public Table(InputStream input, String options) throws IOException {
+    this(input, options, '\0');
   }
 
 
@@ -323,14 +335,16 @@ public class Table {
     return options;
   }
 
-
   protected void parse(InputStream input, String options) throws IOException {
+    parse(input, options, '\0');
+  }
+
+  protected void parse(InputStream input, String options, char delimiter) throws IOException {
 //    boolean awfulCSV = false;
     boolean header = false;
     String extension = null;
     boolean binary = false;
     String encoding = "UTF-8";
-    char delimiter = ',';
 
     String worksheet = null;
     final String sheetParam = "worksheet=";
@@ -341,10 +355,8 @@ public class Table {
       for (String opt : opts) {
         if (opt.equals("tsv")) {
           extension = "tsv";
-          delimiter = '\t';
         } else if (opt.equals("csv")) {
           extension = "csv";
-          delimiter = ',';
         } else if (opt.equals("ods")) {
           extension = "ods";
         } else if (opt.equals("newlines")) {
@@ -362,23 +374,26 @@ public class Table {
           // ignore option, this is only handled by PApplet
         } else if (opt.startsWith("encoding=")) {
           encoding = opt.substring(9);
-        } else if (opt.startsWith("delimiter=")) {
-          delimiter = opt.charAt(10);
-          extension = "none";
         } else {
           throw new IllegalArgumentException("'" + opt + "' is not a valid option for loading a Table");
         }
       }
     }
 
-    if (extension == null) {
-      throw new IllegalArgumentException("No extension or delimiter specified for this Table");
+    if(delimiter == '\0') {
+      if(extension == null) {
+        throw new IllegalArgumentException("No extension or delimiter specified for this Table");
+      } else if(extension.equals("csv")) {
+        delimiter = ',';
+      } else if(extension.equals("tsv")) {
+        delimiter = '\t';
+      }
     }
 
     if (binary) {
       loadBinary(input);
 
-    } else if (extension.equals("ods")) {
+    } else if (extension != null && extension.equals("ods")) {
       odsParse(input, worksheet, header);
 
     } else {
@@ -421,6 +436,7 @@ public class Table {
           setRowCount(row << 1);
         }
         if (row == 0 && header) {
+          PApplet.println("'" + delimiter + "'" + line);
           setColumnTitles(delimiter == '\t' ? PApplet.split(line, '\t') : splitLineDSV(line, reader, delimiter));
           header = false;
         } else {
@@ -660,6 +676,7 @@ public class Table {
      * @return index of the delimiter, or -1 if line ended inside an unclosed quote
      */
     protected boolean ingest() {
+      PApplet.println(c[start]);
       boolean hasEscapedQuotes = false;
       // not possible
 //      if (index == c.length) {  // we're already at the end
@@ -710,6 +727,8 @@ public class Table {
               i += 2;
 
             } else {
+              PApplet.println("'" + delimiter + "'");
+              PApplet.println(Arrays.toString(c));
               throw new RuntimeException("Unterminated quoted field mid-line");
             }
           }

@@ -6111,6 +6111,11 @@ public class PApplet implements PConstants {
   }
 
 
+  public Table loadTable(String filename, String options) {
+    return loadTable(filename, options, '\0');
+  }
+
+
   /**
    * Options may contain "header", "tsv", "csv", or "bin" separated by commas.
    *
@@ -6121,14 +6126,12 @@ public class PApplet implements PConstants {
    * dictionary file can only be tab separated values (.tsv) and its extension
    * will be ignored. This option was added in Processing 2.0.2.
    *
-   * Another option is "delimiter=c", where c is a character other than
-   * whitespace or a comma. In this case, it will be treated like a csv, but
-   * with the custom delimiter character rather than a comma. However, this
-   * does not support escaping with quotes or backslashes.
+   * If a filetype is specified in the options string, it overrides the delimiter.
    *
+   * @param delimiter the delimiter character to parse the file with
    * @param options may contain "header", "tsv", "csv", or "bin" separated by commas
    */
-  public Table loadTable(String filename, String options) {
+  public Table loadTable(String filename, String options, char delimiter) {
     try {
       String optionStr = Table.extensionOptions(true, filename, options);
       String[] optionList = trim(split(optionStr, ','));
@@ -6145,7 +6148,7 @@ public class PApplet implements PConstants {
         System.err.println(filename + " does not exist or could not be read");
         return null;
       }
-      return new Table(input, optionStr);
+      return new Table(input, optionStr, delimiter);
 
     } catch (IOException e) {
       printStackTrace(e);
