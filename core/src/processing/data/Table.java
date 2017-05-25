@@ -436,7 +436,6 @@ public class Table {
           setRowCount(row << 1);
         }
         if (row == 0 && header) {
-          PApplet.println("'" + delimiter + "'" + line);
           setColumnTitles(delimiter == '\t' ? PApplet.split(line, '\t') : splitLineDSV(line, reader, delimiter));
           header = false;
         } else {
@@ -676,7 +675,6 @@ public class Table {
      * @return index of the delimiter, or -1 if line ended inside an unclosed quote
      */
     protected boolean ingest() {
-      PApplet.println(c[start]);
       boolean hasEscapedQuotes = false;
       // not possible
 //      if (index == c.length) {  // we're already at the end
@@ -727,8 +725,6 @@ public class Table {
               i += 2;
 
             } else {
-              PApplet.println("'" + delimiter + "'");
-              PApplet.println(Arrays.toString(c));
               throw new RuntimeException("Unterminated quoted field mid-line");
             }
           }
